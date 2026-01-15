@@ -27,14 +27,8 @@ const Home: React.FC = () => {
     <div className="space-y-24 pb-24 selection:bg-gold/30">
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center px-6 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?q=80&w=2070&auto=format&fit=crop&grayscale=true" 
-            alt="Sacred backdrop" 
-            className="w-full h-full object-cover opacity-[0.25] scale-105"
-          />
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-cream via-cream to-gold/5">
           <div className="absolute inset-0 bg-gradient-to-r from-cream via-cream/90 to-transparent"></div>
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/p6.png')]"></div>
         </div>
         
         <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center pt-12">

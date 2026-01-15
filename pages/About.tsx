@@ -6,14 +6,7 @@ const About: React.FC = () => {
   return (
     <div className="space-y-24 pb-24">
       <section className="relative h-[60vh] flex items-center px-6 overflow-hidden bg-navy text-white">
-        <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1490730141103-6ac27d020028?q=80&w=2070&auto=format&fit=crop" 
-            alt="Warm light" 
-            className="w-full h-full object-cover opacity-30 grayscale"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/50 to-transparent"></div>
-        </div>
+        <div className="absolute inset-0 z-0 bg-gradient-to-t from-navy via-navy/80 to-navy/60"></div>
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-6">
           <span className="text-gold uppercase tracking-widest font-bold text-xs">Our Foundation</span>
           <h1 className="font-serif text-5xl md:text-7xl leading-tight">Born from a <br/><span className="italic text-gold">Living Whisper</span></h1>
@@ -31,9 +24,13 @@ const About: React.FC = () => {
             But when we read Bibles today, we often read them as observers. We watch Jesus speak to Peter, Mary, or Thomas. We wanted to close that distance. We wanted to build a bridge between the ancient scrolls and the modern heart.
           </p>
         </div>
-        <div className="relative rounded-3xl overflow-hidden shadow-2xl border-8 border-white group">
-          <img src="https://images.unsplash.com/photo-1544640808-32ca72ac7f67?q=80&w=1000&auto=format&fit=crop" alt="Founder reading" />
-          <div className="absolute inset-0 bg-gold/10 group-hover:opacity-0 transition-opacity"></div>
+        <div className="relative rounded-3xl overflow-hidden shadow-2xl border-8 border-white bg-navy/5 flex items-center justify-center h-64">
+          <div className="text-center space-y-4 p-8">
+            <div className="w-16 h-16 bg-gold/20 rounded-full mx-auto flex items-center justify-center">
+              <span className="text-gold font-serif text-3xl">C</span>
+            </div>
+            <p className="text-navy/60 italic font-scripture text-lg">"Called by your name..."</p>
+          </div>
         </div>
       </section>
 
