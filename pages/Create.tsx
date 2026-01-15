@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GenderOption, ProductFormat, PersonalizationData } from '../types';
-import { PRICING, FORMAT_LABELS, SAMPLE_VERSES } from '../constants';
+import { GenderOption, ProductFormat, PersonalizationData, BibleVersion } from '../types';
+import { PRICING, FORMAT_LABELS, SAMPLE_VERSES_BY_VERSION, BIBLE_VERSIONS } from '../constants';
 import { personalizeText } from '../utils/personalization';
 
 const Create: React.FC = () => {
@@ -10,19 +10,22 @@ const Create: React.FC = () => {
   const [formData, setFormData] = useState<PersonalizationData>({
     name: '',
     gender: 'female',
-    format: 'softcover'
+    format: 'softcover',
+    bibleVersion: 'web'
   });
-  
+  const [email, setEmail] = useState('');
+
   const [activeVerseIndex, setActiveVerseIndex] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Cycle through verses
   useEffect(() => {
     const timer = setInterval(() => {
-      setActiveVerseIndex((prev) => (prev + 1) % SAMPLE_VERSES.length);
+      setActiveVerseIndex((prev) => (prev + 1) % SAMPLE_VERSES_BY_VERSION[formData.bibleVersion].length);
     }, 8000);
     return () => clearInterval(timer);
-  }, []);
+  }, [formData.bibleVersion]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,20 +35,42 @@ const Create: React.FC = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       alert("Please enter a name for personalization.");
       return;
     }
+    if (!email.trim()) {
+      alert("Please enter your email address.");
+      return;
+    }
     setIsProcessing(true);
-    // Simulate API call to create checkout session
-    setTimeout(() => {
-      navigate('/confirmation', { state: { orderDetails: formData } });
-    }, 2000);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          email: email.trim()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
+
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (err) {
+      setError('Payment initialization failed. Please try again.');
+      setIsProcessing(false);
+    }
   };
 
-  const activeVerse = SAMPLE_VERSES[activeVerseIndex];
+  const activeVerse = SAMPLE_VERSES_BY_VERSION[formData.bibleVersion][activeVerseIndex];
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 lg:py-24 grid grid-cols-1 lg:grid-cols-2 gap-16">
@@ -78,10 +103,27 @@ const Create: React.FC = () => {
             )}
           </div>
 
-          {/* Step 2: Gender */}
+          {/* Step 2: Email */}
           <div className="space-y-4">
             <label className="block text-sm font-semibold uppercase tracking-wider text-navy/70">
-              2. Preferred Form of Address
+              2. Your Email Address
+            </label>
+            <input
+              type="email"
+              name="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full text-xl bg-transparent border-b-2 border-navy/20 focus:border-gold outline-none py-3 transition-all placeholder:text-navy/20"
+              required
+            />
+            <p className="text-xs text-navy/40 italic">We'll send your order confirmation and digital downloads here.</p>
+          </div>
+
+          {/* Step 3: Gender */}
+          <div className="space-y-4">
+            <label className="block text-sm font-semibold uppercase tracking-wider text-navy/70">
+              3. Preferred Form of Address
             </label>
             <div className="grid grid-cols-3 gap-3">
               {(['male', 'female', 'neutral'] as GenderOption[]).map((g) => (
@@ -90,8 +132,8 @@ const Create: React.FC = () => {
                   type="button"
                   onClick={() => handleSelectChange('gender', g)}
                   className={`py-3 px-4 rounded-xl border-2 transition-all font-medium text-sm capitalize ${
-                    formData.gender === g 
-                      ? 'border-gold bg-gold/5 text-navy' 
+                    formData.gender === g
+                      ? 'border-gold bg-gold/5 text-navy'
                       : 'border-navy/5 hover:border-navy/20 text-navy/50'
                   }`}
                 >
@@ -102,10 +144,42 @@ const Create: React.FC = () => {
             <p className="text-xs text-navy/40 italic">This ensures terms like "son" or "daughter" reflect the reader's heart.</p>
           </div>
 
-          {/* Step 3: Format */}
+          {/* Step 4: Bible Version */}
           <div className="space-y-4">
             <label className="block text-sm font-semibold uppercase tracking-wider text-navy/70">
-              3. Choose Your Format
+              4. Choose Your Translation
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              {(['web', 'kjv'] as BibleVersion[]).map((version) => (
+                <div
+                  key={version}
+                  onClick={() => handleSelectChange('bibleVersion', version)}
+                  className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${
+                    formData.bibleVersion === version
+                      ? 'border-gold bg-gold/5'
+                      : 'border-navy/5 hover:border-navy/20'
+                  }`}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-navy text-lg">{BIBLE_VERSIONS[version].shortName}</p>
+                      <span className="text-[10px] uppercase font-semibold text-gold bg-gold/10 px-2 py-1 rounded-full">
+                        {BIBLE_VERSIONS[version].style}
+                      </span>
+                    </div>
+                    <p className="text-sm text-navy/70">{BIBLE_VERSIONS[version].name}</p>
+                    <p className="text-xs text-navy/40">{BIBLE_VERSIONS[version].description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-navy/40 italic">Both translations are in the public domain — no copyright restrictions.</p>
+          </div>
+
+          {/* Step 5: Format */}
+          <div className="space-y-4">
+            <label className="block text-sm font-semibold uppercase tracking-wider text-navy/70">
+              5. Choose Your Format
             </label>
             <div className="space-y-3">
               {(['digital', 'softcover', 'hardcover', 'leather'] as ProductFormat[]).map((f) => (
@@ -133,7 +207,13 @@ const Create: React.FC = () => {
             </div>
           </div>
 
-          <button 
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
+          <button
             type="submit"
             disabled={isProcessing}
             className="w-full bg-navy text-white py-5 rounded-full text-xl font-bold shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1 flex items-center justify-center space-x-2 disabled:opacity-50"
@@ -184,7 +264,7 @@ const Create: React.FC = () => {
           </div>
           <div className="p-4 bg-gold/5 rounded-2xl border border-gold/10 text-center">
              <p className="text-[10px] uppercase font-bold text-gold mb-1">Translation</p>
-             <p className="text-sm font-medium text-navy">World English Bible</p>
+             <p className="text-sm font-medium text-navy">{BIBLE_VERSIONS[formData.bibleVersion].name}</p>
           </div>
         </div>
       </div>
