@@ -32,6 +32,12 @@ const BIBLE_VERSION_NAMES: Record<BibleVersion, string> = {
   kjv: 'King James Version',
 };
 
+// Shipping rates for physical products
+const SHIPPING_RATES: Record<string, number> = {
+  standard: 599,  // $5.99 standard shipping
+  express: 1299,  // $12.99 express shipping
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -59,7 +65,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? `https://${process.env.VERCEL_URL}`
       : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    const session = await stripe.checkout.sessions.create({
+    const isPhysicalProduct = format !== 'digital';
+
+    // Build session configuration
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
       mode: 'payment',
       customer_email: email,
@@ -70,7 +79,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             product_data: {
               name: `Personalized Gospels - ${FORMAT_LABELS[format]}`,
               description: `Personalized for "${name}" | ${BIBLE_VERSION_NAMES[bibleVersion]} | ${gender === 'neutral' ? 'Beloved' : gender} pronouns`,
-              images: ['https://calledbyname.com/book-preview.jpg'],
             },
             unit_amount: PRICING[format],
           },
@@ -85,7 +93,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       success_url: `${baseUrl}/#/confirmation?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/#/create`,
-    });
+    };
+
+    // Add shipping for physical products
+    if (isPhysicalProduct) {
+      sessionConfig.shipping_address_collection = {
+        allowed_countries: ['US', 'CA', 'GB', 'AU', 'NZ', 'IE', 'DE', 'FR', 'ES', 'IT', 'NL', 'BE', 'AT', 'CH'],
+      };
+      sessionConfig.shipping_options = [
+        {
+          shipping_rate_data: {
+            type: 'fixed_amount',
+            fixed_amount: {
+              amount: SHIPPING_RATES.standard,
+              currency: 'usd',
+            },
+            display_name: 'Standard Shipping',
+            delivery_estimate: {
+              minimum: { unit: 'business_day', value: 7 },
+              maximum: { unit: 'business_day', value: 14 },
+            },
+          },
+        },
+        {
+          shipping_rate_data: {
+            type: 'fixed_amount',
+            fixed_amount: {
+              amount: SHIPPING_RATES.express,
+              currency: 'usd',
+            },
+            display_name: 'Express Shipping',
+            delivery_estimate: {
+              minimum: { unit: 'business_day', value: 3 },
+              maximum: { unit: 'business_day', value: 5 },
+            },
+          },
+        },
+      ];
+      sessionConfig.phone_number_collection = {
+        enabled: true,
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return res.status(200).json({ url: session.url });
 

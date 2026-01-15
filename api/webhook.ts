@@ -15,6 +15,69 @@ async function buffer(readable: any): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
+async function triggerFulfillment(
+  session: Stripe.Checkout.Session,
+  stripe: Stripe
+): Promise<void> {
+  const { customerName, gender, format, bibleVersion } = session.metadata || {};
+
+  if (!customerName || !format) {
+    console.error('Missing metadata for fulfillment');
+    return;
+  }
+
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'https://calledbyname.vercel.app';
+
+  // Get shipping address from Stripe session if physical order
+  let shippingAddress = null;
+  if (format !== 'digital' && session.shipping_details) {
+    const addr = session.shipping_details.address;
+    shippingAddress = {
+      name: session.shipping_details.name || customerName,
+      street1: addr?.line1 || '',
+      street2: addr?.line2 || '',
+      city: addr?.city || '',
+      state: addr?.state || '',
+      postalCode: addr?.postal_code || '',
+      country: addr?.country || 'US',
+      phone: session.customer_details?.phone || '',
+    };
+  }
+
+  const fulfillmentData = {
+    orderId: `WN-${session.id.slice(-8).toUpperCase()}`,
+    customerEmail: session.customer_email,
+    customerName,
+    personalization: {
+      name: customerName,
+      gender: gender || 'neutral',
+      bibleVersion: bibleVersion || 'web',
+    },
+    format,
+    shippingAddress,
+  };
+
+  try {
+    const response = await fetch(`${baseUrl}/api/fulfill-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fulfillmentData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Fulfillment API error:', errorText);
+    } else {
+      const result = await response.json();
+      console.log('Fulfillment triggered:', result);
+    }
+  } catch (error) {
+    console.error('Failed to trigger fulfillment:', error);
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -49,22 +112,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      // Extract order details from metadata
-      const { customerName, gender, format, bibleVersion } = session.metadata || {};
-
       console.log('Order completed:', {
         sessionId: session.id,
         customerEmail: session.customer_email,
-        customerName,
-        gender,
-        format,
-        bibleVersion,
+        metadata: session.metadata,
         amountTotal: session.amount_total,
+        shippingDetails: session.shipping_details,
       });
 
-      // TODO: Implement order fulfillment:
-      // - For digital: Generate and email PDF
-      // - For print: Queue print order with fulfillment partner
+      // Trigger fulfillment
+      await triggerFulfillment(session, stripe);
 
       break;
     }
