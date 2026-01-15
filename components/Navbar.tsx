@@ -6,8 +6,10 @@ const Navbar: React.FC = () => {
   return (
     <nav className="sticky top-0 z-50 bg-cream/80 backdrop-blur-md border-b border-navy/5 px-6 py-4">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <Link to="/" className="flex items-center space-x-3">
-          <img src="/logo.png" alt="Called by Name" className="h-10 w-auto" />
+        <Link to="/" className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-navy flex items-center justify-center rounded-sm">
+            <span className="text-gold font-serif text-xl">C</span>
+          </div>
           <span className="text-navy font-serif text-xl font-bold tracking-tight">Called by Name</span>
         </Link>
         <div className="hidden md:flex space-x-8 items-center text-sm font-medium text-navy/70">
