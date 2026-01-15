@@ -48,7 +48,7 @@ export const SAMPLE_VERSES: VerseSample[] = [
   {
     id: 'john-15-9',
     reference: 'John 15:9',
-    text: '"Even as the Father has loved me, I also have loved you. Remain in my love, {{NAME}}. My child, if you keep my commandments, you will remain in my love, even as I have kept my Father's commandments and remain in his love."'
+    text: '"Even as the Father has loved me, I also have loved you. Remain in my love, {{NAME}}. My child, if you keep my commandments, you will remain in my love, even as I have kept my Father\'s commandments and remain in his love."'
   },
   {
     id: 'matthew-11-28',
